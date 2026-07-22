@@ -40,6 +40,8 @@ struct CalendarScreen: View {
                     .tint(.brandRose)
                 }
             }
+            .sensoryFeedback(.selection, trigger: selectedDate)
+            .sensoryFeedback(.impact(flexibility: .soft), trigger: monthOffset)
             .sheet(item: $selectedDate) { day in
                 DaySheet(date: day)
                     .presentationDetents([.medium, .large])
@@ -94,7 +96,8 @@ struct CalendarScreen: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 10)
-        .background(color.opacity(0.09), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .glassEffect(.regular.tint(color.opacity(0.10)),
+                     in: RoundedRectangle(cornerRadius: 15, style: .continuous))
     }
 
     // MARK: - 今日贴士
@@ -107,6 +110,7 @@ struct CalendarScreen: View {
                 Image(systemName: "heart.text.square.fill")
                     .font(.title3)
                     .foregroundStyle(phase.color)
+                    .symbolEffect(.breathe)
                     .frame(width: 40, height: 40)
                     .background(phase.color.opacity(0.11),
                                 in: RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -147,7 +151,7 @@ struct CalendarScreen: View {
                     Image(systemName: "chevron.left")
                         .font(.subheadline.weight(.semibold))
                         .frame(width: 32, height: 32)
-                        .background(.gray.opacity(0.08), in: Circle())
+                        .glassEffect(.regular.interactive(), in: Circle())
                 }
                 Spacer()
                 Text(displayMonth.formatted(.dateTime.year().month()))
@@ -160,7 +164,7 @@ struct CalendarScreen: View {
                     Image(systemName: "chevron.right")
                         .font(.subheadline.weight(.semibold))
                         .frame(width: 32, height: 32)
-                        .background(.gray.opacity(0.08), in: Circle())
+                        .glassEffect(.regular.interactive(), in: Circle())
                 }
             }
             .tint(.primary)
@@ -321,18 +325,20 @@ struct LegendView: View {
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(phases, id: \.label) { p in
-                    HStack(spacing: 5) {
-                        Image(systemName: p.symbol)
-                            .font(.system(size: 10))
-                        Text(p.label)
-                            .font(.caption.weight(.medium))
+            GlassEffectContainer(spacing: 8) {
+                HStack(spacing: 8) {
+                    ForEach(phases, id: \.label) { p in
+                        HStack(spacing: 5) {
+                            Image(systemName: p.symbol)
+                                .font(.system(size: 10))
+                            Text(p.label)
+                                .font(.caption.weight(.medium))
+                        }
+                        .foregroundStyle(p.color)
+                        .padding(.horizontal, 11)
+                        .padding(.vertical, 7)
+                        .glassEffect(.regular.tint(p.color.opacity(0.12)), in: Capsule())
                     }
-                    .foregroundStyle(p.color)
-                    .padding(.horizontal, 11)
-                    .padding(.vertical, 6)
-                    .background(p.color.opacity(0.11), in: Capsule())
                 }
             }
             .padding(.horizontal, 2)

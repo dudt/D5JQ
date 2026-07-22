@@ -27,6 +27,7 @@ struct RootView: View {
             SettingsScreen()
                 .tabItem { Label("设置", systemImage: "gearshape") }
         }
+        .tabBarMinimizeBehavior(.onScrollDown)
         .tint(.brandRose)
         .sheet(isPresented: Binding(get: { !hasOnboarded }, set: { hasOnboarded = !$0 })) {
             OnboardingView()

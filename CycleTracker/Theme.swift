@@ -20,38 +20,47 @@ extension Color {
     static let brandRose      = Color(hex: 0xE0526E)
 }
 
-// MARK: - 全局背景
+// MARK: - 全局背景：缓慢流动的网格渐变
 
 struct AppBackground: View {
     @Environment(\.colorScheme) private var scheme
 
     var body: some View {
-        ZStack {
-            (scheme == .dark ? Color.black : Color(hex: 0xFBF6F7))
-                .ignoresSafeArea()
-            LinearGradient(
+        TimelineView(.animation(minimumInterval: 1.0 / 12)) { timeline in
+            let t = timeline.date.timeIntervalSinceReferenceDate
+            let x1 = Float(0.5 + 0.28 * sin(t * 0.13))
+            let y1 = Float(0.42 + 0.10 * cos(t * 0.11))
+            let x2 = Float(0.5 + 0.30 * cos(t * 0.09))
+            MeshGradient(
+                width: 3, height: 3,
+                points: [
+                    [0, 0], [0.5, 0], [1, 0],
+                    [0, 0.5], [x1, y1], [1, 0.5],
+                    [0, 1], [x2, 1], [1, 1],
+                ],
                 colors: scheme == .dark
-                    ? [Color.brandRose.opacity(0.12), .clear]
-                    : [Color.brandRose.opacity(0.10), .clear],
-                startPoint: .top, endPoint: .center)
-                .ignoresSafeArea()
+                    ? [
+                        Color(hex: 0x27121A), Color(hex: 0x1B1120), Color(hex: 0x101018),
+                        Color(hex: 0x2B1420), Color(hex: 0x321523), Color(hex: 0x151C22),
+                        Color(hex: 0x120E14), Color(hex: 0x1E1220), Color(hex: 0x0E1418),
+                    ]
+                    : [
+                        Color(hex: 0xFFE4EC), Color(hex: 0xF6E7FA), Color(hex: 0xE4F0FB),
+                        Color(hex: 0xFBD9E4), Color(hex: 0xFCE8F0), Color(hex: 0xE0F2F0),
+                        Color(hex: 0xFDEFF3), Color(hex: 0xF3E4F6), Color(hex: 0xE7F3F4),
+                    ])
         }
+        .ignoresSafeArea()
     }
 }
 
-// MARK: - 卡片样式
+// MARK: - 卡片：iOS 26 液态玻璃
 
 struct CardStyle: ViewModifier {
-    @Environment(\.colorScheme) private var scheme
-
     func body(content: Content) -> some View {
         content
             .padding(18)
-            .background(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(scheme == .dark ? Color(hex: 0x1C1A1D) : .white)
-                    .shadow(color: Color.brandRose.opacity(scheme == .dark ? 0 : 0.10),
-                            radius: 16, y: 6))
+            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
     }
 }
 
@@ -63,6 +72,7 @@ extension View {
 
 struct CycleRingView: View {
     let analysis: CycleAnalysis
+    @State private var appeared = false
 
     private var today: Date { Date().startOfDay }
 
@@ -76,11 +86,23 @@ struct CycleRingView: View {
             let total = max(seg.nextStart.days(since: seg.start), 1)
             let dayIndex = today.days(since: seg.start)
             ZStack {
+                // 彩色光晕
+                Circle()
+                    .stroke(analysis.phase(on: today).color.opacity(0.35), lineWidth: 26)
+                    .blur(radius: 22)
+                    .padding(6)
                 ring(segment: seg, total: total)
                 todayMarker(dayIndex: dayIndex, total: total)
                 center(seg: seg, dayIndex: dayIndex)
             }
-            .frame(width: 232, height: 232)
+            .frame(width: 236, height: 236)
+            .scaleEffect(appeared ? 1 : 0.85)
+            .opacity(appeared ? 1 : 0)
+            .onAppear {
+                withAnimation(.spring(response: 0.7, dampingFraction: 0.75)) {
+                    appeared = true
+                }
+            }
         } else {
             emptyRing
         }
@@ -95,7 +117,7 @@ struct CycleRingView: View {
             let gap = min(0.15 / Double(total), 0.004)
             Circle()
                 .trim(from: f0 + gap, to: f1 - gap)
-                .stroke(phase.color.opacity(day < today ? 0.45 : 1),
+                .stroke(phase.color.opacity(day < today ? 0.42 : 1),
                         style: StrokeStyle(lineWidth: 13, lineCap: .round))
                 .rotationEffect(.degrees(-90))
         }
@@ -103,13 +125,14 @@ struct CycleRingView: View {
 
     private func todayMarker(dayIndex: Int, total: Int) -> some View {
         let angle = (Double(dayIndex) + 0.5) / Double(total) * 360 - 90
+        let color = analysis.phase(on: today).color
         return Circle()
-            .fill(analysis.phase(on: today).color)
+            .fill(color)
             .frame(width: 21, height: 21)
             .overlay(Circle().strokeBorder(.white, lineWidth: 3))
-            .shadow(color: .black.opacity(0.18), radius: 3, y: 1)
-            .offset(x: 116 * cos(angle * .pi / 180),
-                    y: 116 * sin(angle * .pi / 180))
+            .shadow(color: color.opacity(0.6), radius: 6)
+            .offset(x: 118 * cos(angle * .pi / 180),
+                    y: 118 * sin(angle * .pi / 180))
     }
 
     private func center(seg: CycleSegment, dayIndex: Int) -> some View {
@@ -120,7 +143,9 @@ struct CycleRingView: View {
                 .foregroundStyle(.secondary)
             Text("\(dayIndex + 1)")
                 .font(.system(size: 56, weight: .bold, design: .rounded))
-                .foregroundStyle(phase.color)
+                .foregroundStyle(
+                    LinearGradient(colors: [phase.color, phase.color.opacity(0.65)],
+                                   startPoint: .top, endPoint: .bottom))
                 .contentTransition(.numericText())
             Text("天")
                 .font(.footnote)
@@ -130,25 +155,26 @@ struct CycleRingView: View {
                 .foregroundStyle(phase.color)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 5)
-                .background(phase.color.opacity(0.13), in: Capsule())
+                .glassEffect(.regular.tint(phase.color.opacity(0.14)), in: Capsule())
         }
     }
 
     private var emptyRing: some View {
         ZStack {
             Circle()
-                .stroke(Color.brandRose.opacity(0.15),
-                        style: StrokeStyle(lineWidth: 13, dash: [1, 7], dashPhase: 0))
+                .stroke(Color.brandRose.opacity(0.2),
+                        style: StrokeStyle(lineWidth: 13, dash: [1, 7]))
             VStack(spacing: 8) {
                 Image(systemName: "sparkles")
                     .font(.title)
                     .foregroundStyle(Color.brandRose)
+                    .symbolEffect(.breathe)
                 Text("记录第一次经期\n开启智能预测")
                     .font(.subheadline)
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.secondary)
             }
         }
-        .frame(width: 232, height: 232)
+        .frame(width: 236, height: 236)
     }
 }
