@@ -174,9 +174,11 @@ struct MediumWidgetView: View {
 
 private var placeholderView: some View {
     VStack(spacing: 6) {
-        Image(systemName: "drop.fill")
+        Image(systemName: SharedCycleStore.groupAvailable ? "drop.fill" : "exclamationmark.shield.fill")
             .foregroundStyle(Color.wRose)
-        Text("打开 App 记录经期\n即可显示预测")
+        Text(SharedCycleStore.groupAvailable
+             ? "打开 App 记录经期\n即可显示预测 🎀"
+             : "签名时未保留 App Group\n请用 AltStore / TrollStore 安装")
             .font(.caption2)
             .multilineTextAlignment(.center)
             .foregroundStyle(.secondary)

@@ -31,26 +31,54 @@ struct AppBackground: View {
             let x1 = Float(0.5 + 0.28 * sin(t * 0.13))
             let y1 = Float(0.42 + 0.10 * cos(t * 0.11))
             let x2 = Float(0.5 + 0.30 * cos(t * 0.09))
-            MeshGradient(
-                width: 3, height: 3,
-                points: [
-                    [0, 0], [0.5, 0], [1, 0],
-                    [0, 0.5], [x1, y1], [1, 0.5],
-                    [0, 1], [x2, 1], [1, 1],
-                ],
-                colors: scheme == .dark
-                    ? [
-                        Color(hex: 0x27121A), Color(hex: 0x1B1120), Color(hex: 0x101018),
-                        Color(hex: 0x2B1420), Color(hex: 0x321523), Color(hex: 0x151C22),
-                        Color(hex: 0x120E14), Color(hex: 0x1E1220), Color(hex: 0x0E1418),
-                    ]
-                    : [
-                        Color(hex: 0xFFD3E2), Color(hex: 0xEFD3FF), Color(hex: 0xC9E7FF),
-                        Color(hex: 0xFFB9D0), Color(hex: 0xFFD0E2), Color(hex: 0xBDF2E7),
-                        Color(hex: 0xFFE0EB), Color(hex: 0xEBD4FF), Color(hex: 0xD1F3EF),
-                    ])
+            ZStack {
+                MeshGradient(
+                    width: 3, height: 3,
+                    points: [
+                        [0, 0], [0.5, 0], [1, 0],
+                        [0, 0.5], [x1, y1], [1, 0.5],
+                        [0, 1], [x2, 1], [1, 1],
+                    ],
+                    colors: scheme == .dark
+                        ? [
+                            Color(hex: 0x27121A), Color(hex: 0x1B1120), Color(hex: 0x101018),
+                            Color(hex: 0x2B1420), Color(hex: 0x321523), Color(hex: 0x151C22),
+                            Color(hex: 0x120E14), Color(hex: 0x1E1220), Color(hex: 0x0E1418),
+                        ]
+                        : [
+                            Color(hex: 0xFFD3E2), Color(hex: 0xEFD3FF), Color(hex: 0xC9E7FF),
+                            Color(hex: 0xFFB9D0), Color(hex: 0xFFD0E2), Color(hex: 0xBDF2E7),
+                            Color(hex: 0xFFE0EB), Color(hex: 0xEBD4FF), Color(hex: 0xD1F3EF),
+                        ])
+                FloatingDecor(t: t)
+            }
         }
         .ignoresSafeArea()
+    }
+}
+
+/// 背景漂浮的小爱心 / 星星 / 花朵
+private struct FloatingDecor: View {
+    let t: TimeInterval
+    @Environment(\.colorScheme) private var scheme
+
+    private static let symbols = ["heart.fill", "sparkle", "camera.macro", "heart.fill", "sparkle", "cloud.fill", "heart.fill", "sparkle"]
+    private static let xs: [CGFloat] = [0.10, 0.86, 0.20, 0.72, 0.48, 0.90, 0.14, 0.62]
+    private static let ys: [CGFloat] = [0.14, 0.10, 0.48, 0.32, 0.78, 0.58, 0.88, 0.68]
+    private static let sizes: [CGFloat] = [16, 11, 14, 10, 13, 18, 11, 12]
+
+    var body: some View {
+        GeometryReader { geo in
+            ForEach(0..<Self.symbols.count, id: \.self) { i in
+                let drift = CGFloat(7.0 * sin(t * 0.35 + Double(i) * 1.7))
+                Image(systemName: Self.symbols[i])
+                    .font(.system(size: Self.sizes[i]))
+                    .foregroundStyle(.white.opacity(scheme == .dark ? 0.10 : 0.5))
+                    .position(x: geo.size.width * Self.xs[i],
+                              y: geo.size.height * Self.ys[i] + drift)
+            }
+        }
+        .allowsHitTesting(false)
     }
 }
 
@@ -60,7 +88,7 @@ struct CardStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
             .padding(18)
-            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: DS.rCard, style: .continuous))
     }
 }
 
@@ -168,10 +196,8 @@ struct CycleRingView: View {
                 .stroke(Color.brandRose.opacity(0.2),
                         style: StrokeStyle(lineWidth: 13, dash: [1, 7]))
             VStack(spacing: 8) {
-                Image(systemName: "sparkles")
-                    .font(.title)
-                    .foregroundStyle(Color.brandRose)
-                    .symbolEffect(.breathe)
+                Text("🌸")
+                    .font(.largeTitle)
                 Text("记录第一次经期\n开启智能预测")
                     .font(.subheadline)
                     .multilineTextAlignment(.center)

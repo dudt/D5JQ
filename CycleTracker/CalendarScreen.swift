@@ -152,12 +152,12 @@ struct CalendarScreen: View {
 
     private func tip(for phase: DayPhase) -> String {
         switch phase {
-        case .period:          return "注意保暖，多喝温水，避免剧烈运动和生冷饮食"
-        case .predictedPeriod: return "经期可能随时开始，记得随身携带卫生用品"
-        case .fertile:         return "处于易孕窗口，如有备孕或避孕计划请多加注意"
-        case .ovulation:       return "预测排卵日，受孕几率最高，可能伴有轻微腹痛"
-        case .luteal:          return "黄体期易出现经前情绪波动，保持规律作息和好心情"
-        case .follicular:      return "卵泡期精力较好，适合运动、学习和高效工作"
+        case .period:          return "注意保暖，多喝温水，好好照顾自己呀 🍵"
+        case .predictedPeriod: return "经期可能随时开始，记得随身带好卫生用品 🎒"
+        case .fertile:         return "处于易孕窗口，如有备孕或避孕计划请多加注意 🍀"
+        case .ovulation:       return "预测排卵日，受孕几率最高，可能伴有轻微腹痛 ⭐️"
+        case .luteal:          return "黄体期容易情绪波动，早点休息，保持好心情 🌙"
+        case .follicular:      return "卵泡期精力满满，适合运动、学习和高效工作 ✨"
         case .none:            return ""
         }
     }
@@ -326,6 +326,10 @@ struct DayCell: View {
                     Image(systemName: "star.fill")
                         .font(.system(size: 7))
                         .foregroundStyle(Color.ovulationViolet)
+                } else if phase == .period {
+                    Image(systemName: "heart.fill")
+                        .font(.system(size: 7))
+                        .foregroundStyle(Color.periodRed)
                 } else if hasLog {
                     Circle().fill(Color.brandRose.opacity(0.5))
                         .frame(width: 4, height: 4)

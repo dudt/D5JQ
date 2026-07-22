@@ -43,6 +43,12 @@ enum SharedCycleStore {
     static let suiteName = "group.com.dq.cycletracker"
     static let key = "cycleData"
 
+    /// App Group 是否真的可用（签名工具剥离 entitlements 时为 false）
+    static var groupAvailable: Bool {
+        FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: suiteName) != nil
+    }
+
     static func save(_ data: SharedCycleData) {
         guard let defaults = UserDefaults(suiteName: suiteName),
               let encoded = try? JSONEncoder().encode(data) else { return }

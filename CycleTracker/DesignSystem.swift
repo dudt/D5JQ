@@ -11,9 +11,9 @@ enum DS {
     static let s6: CGFloat = 24
 
     // 圆角
-    static let rCard: CGFloat = 26
-    static let rChip: CGFloat = 15
-    static let rButton: CGFloat = 18
+    static let rCard: CGFloat = 30
+    static let rChip: CGFloat = 16
+    static let rButton: CGFloat = 20
 }
 
 extension Font {
@@ -75,14 +75,13 @@ struct GreetingHeader: View {
                 Circle()
                     .fill(LinearGradient(colors: [Color.brandRose, Color.ovulationViolet],
                                          startPoint: .topLeading, endPoint: .bottomTrailing))
-                Image(systemName: "camera.macro")
-                    .font(.body.weight(.semibold))
-                    .foregroundStyle(.white)
+                Text("🌸")
+                    .font(.title3)
             }
             .frame(width: 44, height: 44)
             .shadow(color: Color.brandRose.opacity(0.4), radius: 8, y: 3)
             VStack(alignment: .leading, spacing: 3) {
-                Text("\(greeting)，思雨")
+                Text("\(greeting)，思雨 🎀")
                     .font(.dsTitle)
                 Text(Date().formatted(.dateTime.month().day().weekday(.wide)))
                     .font(.subheadline)

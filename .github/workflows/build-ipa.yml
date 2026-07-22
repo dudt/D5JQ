@@ -39,8 +39,12 @@ jobs:
 
       - name: Package IPA
         run: |
+          brew install ldid
           mkdir -p build/Payload
           cp -R "build/CycleTracker.xcarchive/Products/Applications/CycleTracker.app" build/Payload/
+          # 伪签名嵌入 App Group entitlements，让自签工具（AltStore/Sideloadly/TrollStore）识别并保留
+          ldid -SCycleWidget/CycleWidget.entitlements build/Payload/CycleTracker.app/PlugIns/CycleWidget.appex/CycleWidget
+          ldid -SCycleTracker/CycleTracker.entitlements build/Payload/CycleTracker.app/CycleTracker
           cd build
           zip -qry CycleTracker.ipa Payload
           ls -lh CycleTracker.ipa
