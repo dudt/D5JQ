@@ -178,7 +178,7 @@ private var placeholderView: some View {
             .foregroundStyle(Color.wRose)
         Text(SharedCycleStore.groupAvailable
              ? "打开 App 记录经期\n即可显示预测 🎀"
-             : "签名时未保留 App Group\n请用 AltStore / TrollStore 安装")
+             : "签名时请开启 App Group 选项\n然后重签重装")
             .font(.caption2)
             .multilineTextAlignment(.center)
             .foregroundStyle(.secondary)
