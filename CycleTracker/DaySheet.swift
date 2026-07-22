@@ -13,10 +13,12 @@ struct DaySheet: View {
     @State private var pain = 0
     @State private var mood = ""
     @State private var note = ""
+    @State private var symptoms: Set<String> = []
 
     private let moods = ["😊", "😐", "😢", "😡", "😴", "🤕"]
     private let flowLabels = ["无", "少", "中", "多"]
     private let painLabels = ["无", "轻微", "中度", "严重"]
+    private let symptomOptions = ["腹痛", "腰酸", "头痛", "乳房胀痛", "痤疮", "疲劳", "失眠", "恶心", "食欲增加", "情绪低落", "腹泻", "水肿"]
 
     private var isInRecordedPeriod: Bool {
         cycles.contains { c in
@@ -61,6 +63,36 @@ struct DaySheet: View {
                             }
                         }
                         .frame(maxWidth: .infinity)
+                    }
+                    selectorCard(title: "症状", icon: "stethoscope", tint: .ovulationViolet) {
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
+                            ForEach(symptomOptions, id: \.self) { s in
+                                let selected = symptoms.contains(s)
+                                Button {
+                                    withAnimation(.snappy) {
+                                        if selected { symptoms.remove(s) } else { symptoms.insert(s) }
+                                    }
+                                } label: {
+                                    Text(s)
+                                        .font(.caption.weight(selected ? .semibold : .regular))
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.7)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 9)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                                                .fill(selected ? Color.ovulationViolet.opacity(0.14) : Color.gray.opacity(0.06)))
+                                        .overlay {
+                                            if selected {
+                                                RoundedRectangle(cornerRadius: 11, style: .continuous)
+                                                    .strokeBorder(Color.ovulationViolet.opacity(0.5), lineWidth: 1.2)
+                                            }
+                                        }
+                                        .foregroundStyle(selected ? Color.ovulationViolet : .secondary)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
                     }
                     selectorCard(title: "备注", icon: "square.and.pencil", tint: .follicularBlue) {
                         TextField("症状、备注…", text: $note, axis: .vertical)
@@ -221,14 +253,17 @@ struct DaySheet: View {
     private func loadLog() {
         if let log = logs.first(where: { $0.date == date.startOfDay }) {
             flow = log.flow; pain = log.pain; mood = log.mood; note = log.note
+            symptoms = Set(log.symptoms.split(separator: ",").map(String.init))
         }
     }
 
     private func saveLog() {
+        let joined = symptoms.sorted().joined(separator: ",")
         if let log = logs.first(where: { $0.date == date.startOfDay }) {
             log.flow = flow; log.pain = pain; log.mood = mood; log.note = note
-        } else if flow != 0 || pain != 0 || !mood.isEmpty || !note.isEmpty {
-            context.insert(DailyLog(date: date, flow: flow, pain: pain, mood: mood, note: note))
+            log.symptoms = joined
+        } else if flow != 0 || pain != 0 || !mood.isEmpty || !note.isEmpty || !symptoms.isEmpty {
+            context.insert(DailyLog(date: date, flow: flow, pain: pain, mood: mood, note: note, symptoms: joined))
         }
         try? context.save()
     }

@@ -3,5 +3,7 @@
 build/
 DerivedData/
 *.ipa
+# 图标由 Scripts/make_icon.py 在 CI 中生成
+CycleTracker/Assets.xcassets/AppIcon.appiconset/icon-1024.png
 .DS_Store
 xcuserdata/

@@ -21,13 +21,15 @@ final class DailyLog {
     var pain: Int      // 0-3
     var mood: String
     var note: String
+    var symptoms: String = ""   // 逗号分隔的症状标签
 
-    init(date: Date, flow: Int = 0, pain: Int = 0, mood: String = "", note: String = "") {
+    init(date: Date, flow: Int = 0, pain: Int = 0, mood: String = "", note: String = "", symptoms: String = "") {
         self.date = date.startOfDay
         self.flow = flow
         self.pain = pain
         self.mood = mood
         self.note = note
+        self.symptoms = symptoms
     }
 }
 

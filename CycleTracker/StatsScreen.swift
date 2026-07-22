@@ -24,6 +24,9 @@ struct StatsScreen: View {
                         if !painData.isEmpty {
                             painCard
                         }
+                        if cycles.count >= 2 {
+                            historyCard
+                        }
                         if cycles.count < 3 {
                             hintCard
                         }
@@ -149,6 +152,49 @@ struct StatsScreen: View {
             }
             .chartYScale(domain: 0...3)
             .frame(height: 140)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .card()
+    }
+
+    // MARK: - 周期历史
+
+    private var historyCard: some View {
+        let sorted = cycles.sorted { $0.startDate < $1.startDate }
+        let maxLen = analysis.cycleLengths.max() ?? 1
+        return VStack(alignment: .leading, spacing: 12) {
+            Label("周期历史", systemImage: "clock.arrow.circlepath")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(Color.ovulationViolet)
+            ForEach(Array(sorted.enumerated().reversed()), id: \.element.persistentModelID) { i, c in
+                let len: Int? = i + 1 < sorted.count
+                    ? sorted[i + 1].startDate.days(since: c.startDate)
+                    : nil
+                HStack(spacing: 10) {
+                    Text(c.startDate.formatted(.dateTime.year(.twoDigits).month().day()))
+                        .font(.system(.footnote, design: .rounded))
+                        .frame(width: 88, alignment: .leading)
+                        .foregroundStyle(.secondary)
+                    if let len {
+                        GeometryReader { geo in
+                            Capsule()
+                                .fill(LinearGradient(colors: [Color.brandRose.opacity(0.7), Color.brandRose],
+                                                     startPoint: .leading, endPoint: .trailing))
+                                .frame(width: geo.size.width * CGFloat(len) / CGFloat(max(maxLen, 1)))
+                                .frame(maxHeight: .infinity, alignment: .center)
+                        }
+                        .frame(height: 8)
+                        Text("\(len) 天")
+                            .font(.system(.footnote, design: .rounded).weight(.semibold))
+                            .frame(width: 44, alignment: .trailing)
+                    } else {
+                        Spacer()
+                        Text("最近一次")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .card()

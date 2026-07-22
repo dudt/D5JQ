@@ -10,6 +10,7 @@ struct SettingsScreen: View {
 
     @AppStorage("reminderEnabled") private var reminderEnabled = false
     @AppStorage("reminderDaysBefore") private var reminderDaysBefore = 2
+    @AppStorage("appLockEnabled") private var appLockEnabled = false
 
     @State private var showImporter = false
     @State private var exportDoc: BackupDocument? = nil
@@ -28,6 +29,12 @@ struct SettingsScreen: View {
                             settingLabel("提前 \(reminderDaysBefore) 天提醒", icon: "clock.fill", color: .lutealAmber)
                         }
                     }
+                }
+                Section("隐私") {
+                    Toggle(isOn: $appLockEnabled) {
+                        settingLabel("应用锁（Face ID / 密码）", icon: "faceid", color: .fertileTeal)
+                    }
+                    .tint(.fertileTeal)
                 }
                 Section("数据备份") {
                     Button {
@@ -102,7 +109,7 @@ struct SettingsScreen: View {
     private func makeBackup() -> Backup {
         Backup(
             cycles: cycles.map { .init(start: $0.startDate, end: $0.endDate) },
-            logs: logs.map { .init(date: $0.date, flow: $0.flow, pain: $0.pain, mood: $0.mood, note: $0.note) })
+            logs: logs.map { .init(date: $0.date, flow: $0.flow, pain: $0.pain, mood: $0.mood, note: $0.note, symptoms: $0.symptoms) })
     }
 
     private func restore(from url: URL) {
@@ -121,7 +128,7 @@ struct SettingsScreen: View {
             }
             let existingLogDates = Set(logs.map { $0.date })
             for l in backup.logs where !existingLogDates.contains(l.date.startOfDay) {
-                context.insert(DailyLog(date: l.date, flow: l.flow, pain: l.pain, mood: l.mood, note: l.note))
+                context.insert(DailyLog(date: l.date, flow: l.flow, pain: l.pain, mood: l.mood, note: l.note, symptoms: l.symptoms ?? ""))
             }
             try context.save()
             message = "恢复完成，新增 \(added) 条经期记录"
@@ -177,6 +184,7 @@ struct Backup: Codable {
         let pain: Int
         let mood: String
         let note: String
+        let symptoms: String?
     }
     let cycles: [CycleDTO]
     let logs: [LogDTO]

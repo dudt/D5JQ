@@ -21,6 +21,7 @@ struct CalendarScreen: View {
                 ScrollView {
                     VStack(spacing: 16) {
                         heroCard
+                        tipCard
                         calendarCard
                         LegendView()
                             .padding(.bottom, 8)
@@ -94,6 +95,45 @@ struct CalendarScreen: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 10)
         .background(color.opacity(0.09), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    // MARK: - 今日贴士
+
+    @ViewBuilder
+    private var tipCard: some View {
+        let phase = analysis.phase(on: Date().startOfDay)
+        if phase != .none {
+            HStack(spacing: 12) {
+                Image(systemName: "heart.text.square.fill")
+                    .font(.title3)
+                    .foregroundStyle(phase.color)
+                    .frame(width: 40, height: 40)
+                    .background(phase.color.opacity(0.11),
+                                in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("今日贴士 · \(phase.label)")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(phase.color)
+                    Text(tip(for: phase))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 0)
+            }
+            .card()
+        }
+    }
+
+    private func tip(for phase: DayPhase) -> String {
+        switch phase {
+        case .period:          return "注意保暖，多喝温水，避免剧烈运动和生冷饮食"
+        case .predictedPeriod: return "经期可能随时开始，记得随身携带卫生用品"
+        case .fertile:         return "处于易孕窗口，如有备孕或避孕计划请多加注意"
+        case .ovulation:       return "预测排卵日，受孕几率最高，可能伴有轻微腹痛"
+        case .luteal:          return "黄体期易出现经前情绪波动，保持规律作息和好心情"
+        case .follicular:      return "卵泡期精力较好，适合运动、学习和高效工作"
+        case .none:            return ""
+        }
     }
 
     // MARK: - 日历卡片
