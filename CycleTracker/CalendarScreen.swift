@@ -19,27 +19,22 @@ struct CalendarScreen: View {
             ZStack {
                 AppBackground()
                 ScrollView {
-                    VStack(spacing: 16) {
+                    VStack(spacing: DS.s4) {
+                        GreetingHeader { showImport = true }
+                            .padding(.top, DS.s2)
                         heroCard
+                        WeekStrip(analysis: analysis) { day in
+                            selectedDate = day
+                        }
                         tipCard
                         calendarCard
                         LegendView()
-                            .padding(.bottom, 8)
+                            .padding(.bottom, DS.s2)
                     }
                     .padding(.horizontal)
                 }
             }
-            .navigationTitle("经期助手")
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showImport = true
-                    } label: {
-                        Label("导入历史", systemImage: "square.and.arrow.down")
-                    }
-                    .tint(.brandRose)
-                }
-            }
+            .toolbarVisibility(.hidden, for: .navigationBar)
             .sensoryFeedback(.selection, trigger: selectedDate)
             .sensoryFeedback(.impact(flexibility: .soft), trigger: monthOffset)
             .sheet(item: $selectedDate) { day in
