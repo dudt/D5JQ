@@ -15,6 +15,8 @@ struct DaySheet: View {
     @State private var note = ""
 
     private let moods = ["😊", "😐", "😢", "😡", "😴", "🤕"]
+    private let flowLabels = ["无", "少", "中", "多"]
+    private let painLabels = ["无", "轻微", "中度", "严重"]
 
     private var isInRecordedPeriod: Bool {
         cycles.contains { c in
@@ -25,65 +27,52 @@ struct DaySheet: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("经期标记") {
-                    if isInRecordedPeriod {
-                        Button(role: .destructive) {
-                            removePeriodDay()
-                            dismiss()
-                        } label: {
-                            Label("取消这天的经期标记", systemImage: "drop.slash")
-                        }
-                    } else {
-                        Button {
-                            markPeriodStart()
-                            dismiss()
-                        } label: {
-                            Label("经期从这天开始", systemImage: "drop.fill")
-                        }
-                        if let ongoing = cycles.last, ongoing.endDate == nil,
-                           date > ongoing.startDate, date.days(since: ongoing.startDate) <= 14 {
-                            Button {
-                                ongoing.endDate = date
-                                try? context.save()
-                                dismiss()
-                            } label: {
-                                Label("经期到这天结束", systemImage: "drop.circle")
+            ScrollView {
+                VStack(spacing: 14) {
+                    periodSection
+                    selectorCard(title: "流量", icon: "drop.fill", tint: .periodRed) {
+                        levelPicker(selection: $flow, labels: flowLabels,
+                                    symbol: "drop.fill", tint: .periodRed)
+                    }
+                    selectorCard(title: "疼痛", icon: "bolt.fill", tint: .lutealAmber) {
+                        levelPicker(selection: $pain, labels: painLabels,
+                                    symbol: "bolt.fill", tint: .lutealAmber)
+                    }
+                    selectorCard(title: "心情", icon: "face.smiling", tint: .fertileTeal) {
+                        HStack(spacing: 8) {
+                            ForEach(moods, id: \.self) { m in
+                                Button {
+                                    withAnimation(.snappy) { mood = (mood == m) ? "" : m }
+                                } label: {
+                                    Text(m)
+                                        .font(.title3)
+                                        .frame(width: 44, height: 44)
+                                        .background(
+                                            Circle().fill(mood == m
+                                                ? Color.fertileTeal.opacity(0.18)
+                                                : Color.gray.opacity(0.07)))
+                                        .overlay {
+                                            if mood == m {
+                                                Circle().strokeBorder(Color.fertileTeal, lineWidth: 1.5)
+                                            }
+                                        }
+                                }
+                                .buttonStyle(.plain)
                             }
                         }
+                        .frame(maxWidth: .infinity)
+                    }
+                    selectorCard(title: "备注", icon: "square.and.pencil", tint: .follicularBlue) {
+                        TextField("症状、备注…", text: $note, axis: .vertical)
+                            .lineLimit(2...5)
+                            .padding(10)
+                            .background(.gray.opacity(0.07),
+                                        in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                     }
                 }
-                Section("流量") {
-                    Picker("流量", selection: $flow) {
-                        Text("无").tag(0); Text("少").tag(1); Text("中").tag(2); Text("多").tag(3)
-                    }
-                    .pickerStyle(.segmented)
-                }
-                Section("疼痛程度") {
-                    Picker("疼痛", selection: $pain) {
-                        Text("无").tag(0); Text("轻微").tag(1); Text("中度").tag(2); Text("严重").tag(3)
-                    }
-                    .pickerStyle(.segmented)
-                }
-                Section("心情") {
-                    HStack {
-                        ForEach(moods, id: \.self) { m in
-                            Button {
-                                mood = (mood == m) ? "" : m
-                            } label: {
-                                Text(m).font(.title2)
-                                    .padding(6)
-                                    .background(mood == m ? Color.pink.opacity(0.2) : .clear,
-                                                in: Circle())
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                }
-                Section("备注") {
-                    TextField("症状、备注…", text: $note, axis: .vertical)
-                }
+                .padding()
             }
+            .background(AppBackground())
             .navigationTitle(date.formatted(.dateTime.month().day().weekday()))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -92,6 +81,8 @@ struct DaySheet: View {
                         saveLog()
                         dismiss()
                     }
+                    .fontWeight(.semibold)
+                    .tint(.brandRose)
                 }
                 ToolbarItem(placement: .cancellationAction) {
                     Button("关闭") { dismiss() }
@@ -100,6 +91,132 @@ struct DaySheet: View {
             .onAppear(perform: loadLog)
         }
     }
+
+    // MARK: - 经期标记区
+
+    private var periodSection: some View {
+        VStack(spacing: 10) {
+            if isInRecordedPeriod {
+                actionButton(title: "取消这天的经期标记", icon: "drop.slash",
+                             style: .outline(.periodRed)) {
+                    removePeriodDay()
+                    dismiss()
+                }
+            } else {
+                actionButton(title: "经期从这天开始", icon: "drop.fill",
+                             style: .filled(.periodRed)) {
+                    context.insert(Cycle(startDate: date))
+                    try? context.save()
+                    dismiss()
+                }
+                if let ongoing = cycles.last, ongoing.endDate == nil,
+                   date > ongoing.startDate, date.days(since: ongoing.startDate) <= 14 {
+                    actionButton(title: "经期到这天结束", icon: "drop.circle",
+                                 style: .outline(.periodRed)) {
+                        ongoing.endDate = date
+                        try? context.save()
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+
+    private enum ButtonStyleKind {
+        case filled(Color)
+        case outline(Color)
+    }
+
+    private func actionButton(title: String, icon: String,
+                              style: ButtonStyleKind,
+                              action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Label(title, systemImage: icon)
+                .font(.callout.weight(.semibold))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background {
+                    switch style {
+                    case .filled(let c):
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(LinearGradient(colors: [c, c.opacity(0.82)],
+                                                 startPoint: .top, endPoint: .bottom))
+                    case .outline(let c):
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(c.opacity(0.09))
+                            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .strokeBorder(c.opacity(0.4), lineWidth: 1))
+                    }
+                }
+                .foregroundStyle({
+                    if case .filled = style { return Color.white }
+                    if case .outline(let c) = style { return c }
+                    return Color.primary
+                }())
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - 通用卡片与等级选择器
+
+    private func selectorCard<Content: View>(title: String, icon: String, tint: Color,
+                                             @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label(title, systemImage: icon)
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(tint)
+            content()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .card()
+    }
+
+    private func levelPicker(selection: Binding<Int>, labels: [String],
+                             symbol: String, tint: Color) -> some View {
+        HStack(spacing: 8) {
+            ForEach(0..<labels.count, id: \.self) { level in
+                let selected = selection.wrappedValue == level
+                Button {
+                    withAnimation(.snappy) { selection.wrappedValue = level }
+                } label: {
+                    VStack(spacing: 5) {
+                        if level == 0 {
+                            Image(systemName: "minus")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundStyle(selected ? tint : .secondary)
+                                .frame(height: 16)
+                        } else {
+                            HStack(spacing: 1) {
+                                ForEach(0..<level, id: \.self) { _ in
+                                    Image(systemName: symbol)
+                                        .font(.system(size: 9))
+                                        .foregroundStyle(selected ? tint : Color.secondary.opacity(0.55))
+                                }
+                            }
+                            .frame(height: 16)
+                        }
+                        Text(labels[level])
+                            .font(.caption2.weight(selected ? .semibold : .regular))
+                            .foregroundStyle(selected ? tint : .secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 9)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(selected ? tint.opacity(0.13) : Color.gray.opacity(0.06)))
+                    .overlay {
+                        if selected {
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .strokeBorder(tint.opacity(0.5), lineWidth: 1.2)
+                        }
+                    }
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    // MARK: - 数据
 
     private func loadLog() {
         if let log = logs.first(where: { $0.date == date.startOfDay }) {
@@ -116,12 +233,6 @@ struct DaySheet: View {
         try? context.save()
     }
 
-    private func markPeriodStart() {
-        // 若与已有周期距离 < 15 天，视为误操作仍允许，由预测器自动剔除异常
-        context.insert(Cycle(startDate: date))
-        try? context.save()
-    }
-
     private func removePeriodDay() {
         guard let c = cycles.first(where: { cyc in
             guard let end = cyc.endDate else { return date == cyc.startDate }
@@ -129,7 +240,7 @@ struct DaySheet: View {
         }) else { return }
 
         if date == c.startDate && (c.endDate == nil || c.endDate == c.startDate) {
-            context.delete(c)                       // 单日周期 → 整条删除
+            context.delete(c)                         // 单日周期 → 整条删除
         } else if date == c.startDate {
             c.startDate = c.startDate.adding(days: 1) // 去掉第一天
         } else if date == c.endDate {
@@ -152,45 +263,92 @@ struct ImportHistoryView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("添加一次历史经期") {
-                    DatePicker("开始日期", selection: $start, displayedComponents: .date)
-                    DatePicker("结束日期", selection: $end, in: start..., displayedComponents: .date)
-                    Button {
-                        context.insert(Cycle(startDate: start, endDate: end))
-                        try? context.save()
-                    } label: {
-                        Label("添加这条记录", systemImage: "plus.circle.fill")
-                    }
-                    .disabled(end < start || end.days(since: start) > 14)
-                    if end.days(since: start) > 14 {
-                        Text("经期长度不能超过 15 天").font(.caption).foregroundStyle(.red)
-                    }
-                }
-                Section("已有记录（\(cycles.count) 条）") {
-                    if cycles.isEmpty {
-                        Text("暂无记录").foregroundStyle(.secondary)
-                    }
-                    ForEach(cycles.reversed()) { c in
-                        HStack {
-                            Image(systemName: "drop.fill").foregroundStyle(.red)
-                            Text(rangeText(c))
-                            Spacer()
-                            Button(role: .destructive) {
-                                context.delete(c)
+            ScrollView {
+                VStack(spacing: 14) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Label("添加一次历史经期", systemImage: "plus.circle.fill")
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(Color.brandRose)
+                        DatePicker("开始日期", selection: $start, displayedComponents: .date)
+                        DatePicker("结束日期", selection: $end, in: start..., displayedComponents: .date)
+                        if end.days(since: start) > 14 {
+                            Text("经期长度不能超过 15 天")
+                                .font(.caption)
+                                .foregroundStyle(Color.periodRed)
+                        }
+                        Button {
+                            withAnimation(.snappy) {
+                                context.insert(Cycle(startDate: start, endDate: end))
                                 try? context.save()
-                            } label: {
-                                Image(systemName: "trash").font(.caption)
+                            }
+                        } label: {
+                            Label("添加这条记录", systemImage: "plus")
+                                .font(.callout.weight(.semibold))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 13)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                        .fill(LinearGradient(colors: [Color.brandRose, Color.periodRed],
+                                                             startPoint: .leading, endPoint: .trailing)))
+                                .foregroundStyle(.white)
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(end < start || end.days(since: start) > 14)
+                        .opacity(end < start || end.days(since: start) > 14 ? 0.4 : 1)
+                    }
+                    .card()
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Label("已有记录（\(cycles.count) 条）", systemImage: "clock.arrow.circlepath")
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .padding(.bottom, 6)
+                        if cycles.isEmpty {
+                            Text("暂无记录，添加最近 3~6 次经期，预测会立刻可用")
+                                .font(.subheadline)
+                                .foregroundStyle(.tertiary)
+                                .padding(.vertical, 10)
+                        }
+                        ForEach(Array(cycles.reversed().enumerated()), id: \.element.persistentModelID) { i, c in
+                            HStack(spacing: 10) {
+                                Image(systemName: "drop.fill")
+                                    .font(.caption)
+                                    .foregroundStyle(Color.periodRed)
+                                    .frame(width: 28, height: 28)
+                                    .background(Color.periodRed.opacity(0.1), in: Circle())
+                                Text(rangeText(c))
+                                    .font(.subheadline)
+                                Spacer()
+                                Button {
+                                    withAnimation(.snappy) {
+                                        context.delete(c)
+                                        try? context.save()
+                                    }
+                                } label: {
+                                    Image(systemName: "trash")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                            .padding(.vertical, 7)
+                            if i < cycles.count - 1 {
+                                Divider()
                             }
                         }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .card()
                 }
+                .padding()
             }
+            .background(AppBackground())
             .navigationTitle("导入历史经期")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("完成") { dismiss() }
+                        .fontWeight(.semibold)
+                        .tint(.brandRose)
                 }
             }
         }

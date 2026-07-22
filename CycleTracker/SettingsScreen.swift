@@ -19,32 +19,49 @@ struct SettingsScreen: View {
         NavigationStack {
             Form {
                 Section("经期提醒") {
-                    Toggle("开启提醒", isOn: $reminderEnabled)
+                    Toggle(isOn: $reminderEnabled) {
+                        settingLabel("开启提醒", icon: "bell.badge.fill", color: .brandRose)
+                    }
+                    .tint(.brandRose)
                     if reminderEnabled {
-                        Stepper("提前 \(reminderDaysBefore) 天提醒", value: $reminderDaysBefore, in: 0...7)
+                        Stepper(value: $reminderDaysBefore, in: 0...7) {
+                            settingLabel("提前 \(reminderDaysBefore) 天提醒", icon: "clock.fill", color: .lutealAmber)
+                        }
                     }
                 }
                 Section("数据备份") {
                     Button {
                         exportDoc = BackupDocument(backup: makeBackup())
                     } label: {
-                        Label("导出数据（JSON）", systemImage: "square.and.arrow.up")
+                        settingLabel("导出数据（JSON）", icon: "square.and.arrow.up.fill", color: .follicularBlue)
                     }
                     Button {
                         showImporter = true
                     } label: {
-                        Label("从 JSON 恢复", systemImage: "square.and.arrow.down")
+                        settingLabel("从 JSON 恢复", icon: "square.and.arrow.down.fill", color: .fertileTeal)
                     }
                 }
                 Section("关于") {
-                    LabeledContent("版本", value: "1.0.0")
-                    Text("所有数据仅保存在本机，不上传任何服务器。")
-                        .font(.footnote).foregroundStyle(.secondary)
+                    LabeledContent {
+                        Text("1.0.0")
+                    } label: {
+                        settingLabel("版本", icon: "app.badge.fill", color: .ovulationViolet)
+                    }
+                    HStack(spacing: 10) {
+                        Image(systemName: "lock.shield.fill")
+                            .foregroundStyle(Color.fertileTeal)
+                        Text("所有数据仅保存在本机，不上传任何服务器。")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 2)
                 }
                 if let message {
                     Section { Text(message).font(.footnote).foregroundStyle(.secondary) }
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(AppBackground())
             .navigationTitle("设置")
             .onChange(of: reminderEnabled) { _, on in
                 if on { requestAndSchedule() } else { cancelReminders() }
@@ -63,6 +80,20 @@ struct SettingsScreen: View {
             .fileImporter(isPresented: $showImporter, allowedContentTypes: [.json]) { result in
                 if case .success(let url) = result { restore(from: url) }
             }
+        }
+    }
+
+    // MARK: - 行样式
+
+    private func settingLabel(_ title: String, icon: String, color: Color) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.footnote)
+                .foregroundStyle(.white)
+                .frame(width: 28, height: 28)
+                .background(color, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            Text(title)
+                .foregroundStyle(.primary)
         }
     }
 

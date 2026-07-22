@@ -16,17 +16,17 @@ struct CalendarScreen: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 16) {
-                    summaryCard
-                    monthHeader
-                    MonthGrid(month: displayMonth, analysis: analysis,
-                              loggedDates: Set(logs.map { $0.date })) { day in
-                        selectedDate = day
+            ZStack {
+                AppBackground()
+                ScrollView {
+                    VStack(spacing: 16) {
+                        heroCard
+                        calendarCard
+                        LegendView()
+                            .padding(.bottom, 8)
                     }
-                    LegendView()
+                    .padding(.horizontal)
                 }
-                .padding(.horizontal)
             }
             .navigationTitle("经期助手")
             .toolbar {
@@ -36,70 +36,116 @@ struct CalendarScreen: View {
                     } label: {
                         Label("导入历史", systemImage: "square.and.arrow.down")
                     }
+                    .tint(.brandRose)
                 }
             }
             .sheet(item: $selectedDate) { day in
                 DaySheet(date: day)
                     .presentationDetents([.medium, .large])
+                    .presentationCornerRadius(28)
             }
             .sheet(isPresented: $showImport) {
                 ImportHistoryView()
+                    .presentationCornerRadius(28)
             }
         }
     }
 
-    private var summaryCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            let today = Date().startOfDay
-            let phase = analysis.phase(on: today)
-            HStack {
-                Image(systemName: phase == .none ? "calendar" : phase.symbol)
-                    .foregroundStyle(phase == .none ? .secondary : phase.color)
-                Text(phase == .none ? "暂无数据，请先记录或导入经期" : "今天：\(phase.label)")
-                    .font(.headline)
-            }
+    // MARK: - 首屏：周期环卡片
+
+    private var heroCard: some View {
+        VStack(spacing: 14) {
+            CycleRingView(analysis: analysis)
+                .padding(.top, 6)
+
             if let next = analysis.nextPredictedStart {
-                let days = next.days(since: today)
+                let days = next.days(since: Date().startOfDay)
                 if days > 0 {
-                    Text("距下次经期约 \(days) 天（\(next.formatted(.dateTime.month().day()))）")
-                        .font(.subheadline).foregroundStyle(.secondary)
-                } else if phase == .predictedPeriod || phase == .period {
-                    Text("经期进行中").font(.subheadline).foregroundStyle(.secondary)
+                    Text("距下次经期还有 \(days) 天 · \(next.formatted(.dateTime.month().day()))")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.secondary)
                 }
             }
-            HStack(spacing: 16) {
-                Label("周期约 \(analysis.avgCycleLength) 天", systemImage: "arrow.triangle.2.circlepath")
-                Label("经期约 \(analysis.avgPeriodLength) 天", systemImage: "drop")
+
+            HStack(spacing: 10) {
+                statChip(icon: "arrow.triangle.2.circlepath", title: "周期",
+                         value: "\(analysis.avgCycleLength) 天", color: .follicularBlue)
+                statChip(icon: "drop.fill", title: "经期",
+                         value: "\(analysis.avgPeriodLength) 天", color: .periodRed)
+                statChip(icon: "target", title: "可信度",
+                         value: "\(Int(analysis.confidence * 100))%", color: .fertileTeal)
             }
-            .font(.footnote).foregroundStyle(.secondary)
-            ProgressView(value: analysis.confidence) {
-                Text("预测可信度 \(Int(analysis.confidence * 100))%（记录越多越准）")
-                    .font(.caption2).foregroundStyle(.secondary)
-            }
-            .tint(.pink)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
-        .background(.pink.opacity(0.08), in: RoundedRectangle(cornerRadius: 16))
+        .frame(maxWidth: .infinity)
+        .card()
     }
 
-    private var monthHeader: some View {
-        HStack {
-            Button { monthOffset -= 1 } label: { Image(systemName: "chevron.left") }
-            Spacer()
-            Text(displayMonth.formatted(.dateTime.year().month()))
-                .font(.title3.bold())
-                .onTapGesture { monthOffset = 0 }
-            Spacer()
-            Button { monthOffset += 1 } label: { Image(systemName: "chevron.right") }
+    private func statChip(icon: String, title: String, value: String, color: Color) -> some View {
+        VStack(spacing: 3) {
+            Image(systemName: icon)
+                .font(.caption)
+                .foregroundStyle(color)
+            Text(value)
+                .font(.system(.callout, design: .rounded).weight(.bold))
+            Text(title)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
         }
-        .padding(.horizontal, 8)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 10)
+        .background(color.opacity(0.09), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    // MARK: - 日历卡片
+
+    private var calendarCard: some View {
+        VStack(spacing: 12) {
+            HStack {
+                Button {
+                    withAnimation(.snappy) { monthOffset -= 1 }
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.subheadline.weight(.semibold))
+                        .frame(width: 32, height: 32)
+                        .background(.gray.opacity(0.08), in: Circle())
+                }
+                Spacer()
+                Text(displayMonth.formatted(.dateTime.year().month()))
+                    .font(.system(.headline, design: .rounded))
+                    .onTapGesture { withAnimation(.snappy) { monthOffset = 0 } }
+                Spacer()
+                Button {
+                    withAnimation(.snappy) { monthOffset += 1 }
+                } label: {
+                    Image(systemName: "chevron.right")
+                        .font(.subheadline.weight(.semibold))
+                        .frame(width: 32, height: 32)
+                        .background(.gray.opacity(0.08), in: Circle())
+                }
+            }
+            .tint(.primary)
+
+            MonthGrid(month: displayMonth, analysis: analysis,
+                      loggedDates: Set(logs.map { $0.date })) { day in
+                selectedDate = day
+            }
+        }
+        .card()
+        .gesture(
+            DragGesture(minimumDistance: 30).onEnded { g in
+                withAnimation(.snappy) {
+                    if g.translation.width < -30 { monthOffset += 1 }
+                    if g.translation.width > 30 { monthOffset -= 1 }
+                }
+            })
     }
 }
 
 extension Date: @retroactive Identifiable {
     public var id: TimeInterval { timeIntervalSince1970 }
 }
+
+// MARK: - 月网格
 
 struct MonthGrid: View {
     let month: Date
@@ -128,14 +174,16 @@ struct MonthGrid: View {
     }
 
     var body: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 8) {
             HStack {
                 ForEach(weekdaySymbols, id: \.self) { s in
-                    Text(s).font(.caption).foregroundStyle(.secondary)
+                    Text(s)
+                        .font(.caption2.weight(.medium))
+                        .foregroundStyle(.tertiary)
                         .frame(maxWidth: .infinity)
                 }
             }
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 7), spacing: 6) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 2), count: 7), spacing: 8) {
                 ForEach(Array(days.enumerated()), id: \.offset) { _, day in
                     if let day {
                         DayCell(date: day,
@@ -144,7 +192,7 @@ struct MonthGrid: View {
                                 isToday: day == Date().startOfDay)
                             .onTapGesture { onTap(day) }
                     } else {
-                        Color.clear.frame(height: 48)
+                        Color.clear.frame(height: 46)
                     }
                 }
             }
@@ -152,57 +200,102 @@ struct MonthGrid: View {
     }
 }
 
+// MARK: - 单日格：圆形胶囊
+
 struct DayCell: View {
     let date: Date
     let phase: DayPhase
     let hasLog: Bool
     let isToday: Bool
 
+    private var isFuture: Bool { date > Date().startOfDay }
+
     var body: some View {
-        VStack(spacing: 2) {
-            Text("\(Calendar.current.component(.day, from: date))")
-                .font(.callout)
-                .fontWeight(isToday ? .bold : .regular)
-            if phase != .none {
-                Image(systemName: phase.symbol)
-                    .font(.system(size: 9))
-                    .foregroundStyle(phase.color)
-            } else {
-                Circle().fill(hasLog ? Color.gray : .clear)
-                    .frame(width: 4, height: 4)
+        VStack(spacing: 3) {
+            ZStack {
+                switch phase {
+                case .none:
+                    Circle().fill(.clear)
+                case .predictedPeriod:
+                    Circle()
+                        .fill(Color.predictedRose.opacity(0.16))
+                    Circle()
+                        .strokeBorder(Color.predictedRose,
+                                      style: StrokeStyle(lineWidth: 1.2, dash: [2.5, 2.5]))
+                case .period:
+                    Circle()
+                        .fill(LinearGradient(colors: [Color.periodRed, Color(hex: 0xC93A56)],
+                                             startPoint: .top, endPoint: .bottom))
+                case .ovulation:
+                    Circle()
+                        .fill(LinearGradient(colors: [Color.ovulationViolet, Color(hex: 0x7C4DDB)],
+                                             startPoint: .top, endPoint: .bottom))
+                default:
+                    Circle().fill(phase.color.opacity(isFuture ? 0.13 : 0.20))
+                }
+
+                if isToday && phase == .none {
+                    Circle().strokeBorder(Color.brandRose, lineWidth: 1.6)
+                }
+
+                Text("\(Calendar.current.component(.day, from: date))")
+                    .font(.system(.subheadline, design: .rounded)
+                        .weight(isToday || phase == .period || phase == .ovulation ? .bold : .regular))
+                    .foregroundStyle(
+                        phase == .period || phase == .ovulation ? .white :
+                        isToday ? Color.brandRose : .primary)
             }
-        }
-        .frame(maxWidth: .infinity, minHeight: 48)
-        .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(phase.color.opacity(phase == .predictedPeriod ? 0.15 : phase == .none ? 0 : 0.18))
-        )
-        .overlay {
-            if phase == .predictedPeriod {
-                RoundedRectangle(cornerRadius: 10)
-                    .strokeBorder(Color.pink, style: StrokeStyle(lineWidth: 1, dash: [3]))
-            } else if isToday {
-                RoundedRectangle(cornerRadius: 10)
-                    .strokeBorder(Color.pink, lineWidth: 1.5)
+            .frame(width: 38, height: 38)
+            .overlay(alignment: .top) {
+                if isToday && phase != .none {
+                    Circle()
+                        .fill(Color.brandRose)
+                        .frame(width: 5, height: 5)
+                        .offset(y: -8)
+                }
             }
+
+            Group {
+                if phase == .ovulation {
+                    Image(systemName: "star.fill")
+                        .font(.system(size: 7))
+                        .foregroundStyle(Color.ovulationViolet)
+                } else if hasLog {
+                    Circle().fill(Color.brandRose.opacity(0.5))
+                        .frame(width: 4, height: 4)
+                } else {
+                    Color.clear.frame(width: 4, height: 4)
+                }
+            }
+            .frame(height: 8)
         }
+        .frame(height: 46)
+        .contentShape(Rectangle())
     }
 }
+
+// MARK: - 图例：横向胶囊
 
 struct LegendView: View {
     private let phases: [DayPhase] = [.period, .predictedPeriod, .fertile, .ovulation, .luteal, .follicular]
 
     var body: some View {
-        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-            ForEach(phases, id: \.label) { p in
-                HStack(spacing: 4) {
-                    Image(systemName: p.symbol).font(.caption2).foregroundStyle(p.color)
-                    Text(p.label).font(.caption2).foregroundStyle(.secondary)
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(phases, id: \.label) { p in
+                    HStack(spacing: 5) {
+                        Image(systemName: p.symbol)
+                            .font(.system(size: 10))
+                        Text(p.label)
+                            .font(.caption.weight(.medium))
+                    }
+                    .foregroundStyle(p.color)
+                    .padding(.horizontal, 11)
+                    .padding(.vertical, 6)
+                    .background(p.color.opacity(0.11), in: Capsule())
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .padding(.horizontal, 2)
         }
-        .padding()
-        .background(.gray.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
     }
 }

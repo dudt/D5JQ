@@ -12,12 +12,12 @@ enum DayPhase {
 
     var color: Color {
         switch self {
-        case .period:          return .red
-        case .predictedPeriod: return .pink
-        case .fertile:         return .green
-        case .ovulation:       return .purple
-        case .luteal:          return .orange
-        case .follicular:      return .blue
+        case .period:          return .periodRed
+        case .predictedPeriod: return .predictedRose
+        case .fertile:         return .fertileTeal
+        case .ovulation:       return .ovulationViolet
+        case .luteal:          return .lutealAmber
+        case .follicular:      return .follicularBlue
         case .none:            return .clear
         }
     }

@@ -22,6 +22,6 @@ struct RootView: View {
             SettingsScreen()
                 .tabItem { Label("设置", systemImage: "gearshape") }
         }
-        .tint(.pink)
+        .tint(.brandRose)
     }
 }
