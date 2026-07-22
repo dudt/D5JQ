@@ -124,15 +124,18 @@ struct CycleRingView: View {
     }
 
     private func todayMarker(dayIndex: Int, total: Int) -> some View {
-        let angle = (Double(dayIndex) + 0.5) / Double(total) * 360 - 90
+        let angle: Double = (Double(dayIndex) + 0.5) / Double(total) * 360.0 - 90.0
+        let radians: Double = angle * Double.pi / 180.0
+        let x: CGFloat = CGFloat(118.0 * cos(radians))
+        let y: CGFloat = CGFloat(118.0 * sin(radians))
         let color = analysis.phase(on: today).color
-        return Circle()
+        let dot = Circle()
             .fill(color)
             .frame(width: 21, height: 21)
-            .overlay(Circle().strokeBorder(.white, lineWidth: 3))
+        return dot
+            .overlay(Circle().strokeBorder(Color.white, lineWidth: 3))
             .shadow(color: color.opacity(0.6), radius: 6)
-            .offset(x: 118 * cos(angle * .pi / 180),
-                    y: 118 * sin(angle * .pi / 180))
+            .offset(x: x, y: y)
     }
 
     private func center(seg: CycleSegment, dayIndex: Int) -> some View {
