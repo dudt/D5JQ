@@ -11,13 +11,13 @@ extension Color {
             blue: Double(hex & 0xFF) / 255)
     }
 
-    static let periodRed      = Color(hex: 0xE5484D)
-    static let predictedRose  = Color(hex: 0xF2A0B5)
-    static let fertileTeal    = Color(hex: 0x14B8A6)
-    static let ovulationViolet = Color(hex: 0x8B5CF6)
-    static let lutealAmber    = Color(hex: 0xE8A33D)
-    static let follicularBlue = Color(hex: 0x60A5FA)
-    static let brandRose      = Color(hex: 0xE0526E)
+    static let periodRed      = Color(hex: 0xF43F5E)
+    static let predictedRose  = Color(hex: 0xFF9EC0)
+    static let fertileTeal    = Color(hex: 0x00C9A7)
+    static let ovulationViolet = Color(hex: 0x9B5CFF)
+    static let lutealAmber    = Color(hex: 0xFFA726)
+    static let follicularBlue = Color(hex: 0x38A8FF)
+    static let brandRose      = Color(hex: 0xFF4F7B)
 }
 
 // MARK: - 全局背景：缓慢流动的网格渐变
@@ -45,9 +45,9 @@ struct AppBackground: View {
                         Color(hex: 0x120E14), Color(hex: 0x1E1220), Color(hex: 0x0E1418),
                     ]
                     : [
-                        Color(hex: 0xFFE4EC), Color(hex: 0xF6E7FA), Color(hex: 0xE4F0FB),
-                        Color(hex: 0xFBD9E4), Color(hex: 0xFCE8F0), Color(hex: 0xE0F2F0),
-                        Color(hex: 0xFDEFF3), Color(hex: 0xF3E4F6), Color(hex: 0xE7F3F4),
+                        Color(hex: 0xFFD3E2), Color(hex: 0xEFD3FF), Color(hex: 0xC9E7FF),
+                        Color(hex: 0xFFB9D0), Color(hex: 0xFFD0E2), Color(hex: 0xBDF2E7),
+                        Color(hex: 0xFFE0EB), Color(hex: 0xEBD4FF), Color(hex: 0xD1F3EF),
                     ])
         }
         .ignoresSafeArea()

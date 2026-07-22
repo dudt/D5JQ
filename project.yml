@@ -10,6 +10,10 @@ targets:
     platform: iOS
     sources:
       - CycleTracker
+      - Shared
+    dependencies:
+      - target: CycleWidget
+        embed: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.dq.cycletracker
@@ -24,6 +28,7 @@ targets:
         CODE_SIGNING_ALLOWED: NO
         ENABLE_USER_SCRIPT_SANDBOXING: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        CODE_SIGN_ENTITLEMENTS: CycleTracker/CycleTracker.entitlements
     info:
       path: CycleTracker/Info.plist
       properties:
@@ -38,6 +43,33 @@ targets:
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
         ITSAppUsesNonExemptEncryption: false
+  CycleWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - CycleWidget
+      - Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.dq.cycletracker.widget
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "1"
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: ""
+        CODE_SIGNING_REQUIRED: NO
+        CODE_SIGNING_ALLOWED: NO
+        ENABLE_USER_SCRIPT_SANDBOXING: YES
+        CODE_SIGN_ENTITLEMENTS: CycleWidget/CycleWidget.entitlements
+        SKIP_INSTALL: YES
+    info:
+      path: CycleWidget/Info.plist
+      properties:
+        CFBundleDisplayName: 思雨の经期助手
+        CFBundleDevelopmentRegion: zh_CN
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
 schemes:
   CycleTracker:
     build:

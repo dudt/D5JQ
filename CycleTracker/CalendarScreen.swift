@@ -10,6 +10,11 @@ struct CalendarScreen: View {
 
     private var analysis: CycleAnalysis { CyclePredictor.analyze(cycles: cycles) }
 
+    /// 周期数据指纹：任何开始/结束日期变化都会触发小组件同步
+    private var cycleFingerprint: [Date] {
+        cycles.flatMap { [$0.startDate, $0.endDate ?? Date.distantPast] }
+    }
+
     private var displayMonth: Date {
         Calendar.current.date(byAdding: .month, value: monthOffset, to: Date().startOfDay) ?? Date()
     }
@@ -37,6 +42,10 @@ struct CalendarScreen: View {
             .toolbarVisibility(.hidden, for: .navigationBar)
             .sensoryFeedback(.selection, trigger: selectedDate)
             .sensoryFeedback(.impact(flexibility: .soft), trigger: monthOffset)
+            .onAppear { WidgetSync.push(analysis: analysis) }
+            .onChange(of: cycleFingerprint) { _, _ in
+                WidgetSync.push(analysis: analysis)
+            }
             .sheet(item: $selectedDate) { day in
                 DaySheet(date: day)
                     .presentationDetents([.medium, .large])
@@ -76,6 +85,24 @@ struct CalendarScreen: View {
         }
         .frame(maxWidth: .infinity)
         .card()
+        .overlay(alignment: .topLeading) {
+            Image(systemName: "sparkle")
+                .font(.system(size: 15))
+                .foregroundStyle(Color.ovulationViolet.opacity(0.55))
+                .padding(18)
+        }
+        .overlay(alignment: .topTrailing) {
+            Image(systemName: "camera.macro")
+                .font(.system(size: 17))
+                .foregroundStyle(Color.brandRose.opacity(0.5))
+                .padding(16)
+        }
+        .overlay(alignment: .bottomLeading) {
+            Image(systemName: "leaf.fill")
+                .font(.system(size: 13))
+                .foregroundStyle(Color.fertileTeal.opacity(0.45))
+                .padding(18)
+        }
     }
 
     private func statChip(icon: String, title: String, value: String, color: Color) -> some View {

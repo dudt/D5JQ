@@ -70,7 +70,17 @@ struct GreetingHeader: View {
     }
 
     var body: some View {
-        HStack(alignment: .center) {
+        HStack(alignment: .center, spacing: DS.s3) {
+            ZStack {
+                Circle()
+                    .fill(LinearGradient(colors: [Color.brandRose, Color.ovulationViolet],
+                                         startPoint: .topLeading, endPoint: .bottomTrailing))
+                Image(systemName: "camera.macro")
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(.white)
+            }
+            .frame(width: 44, height: 44)
+            .shadow(color: Color.brandRose.opacity(0.4), radius: 8, y: 3)
             VStack(alignment: .leading, spacing: 3) {
                 Text("\(greeting)，思雨")
                     .font(.dsTitle)
